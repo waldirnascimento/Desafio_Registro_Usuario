@@ -1,0 +1,126 @@
+
+FDCOBM58.cpy
+
+          01 REG-USUARIOS.
+             03 ID-USUARIO                  PIC 9(02).
+             03 NOME-USUARIO                PIC X(22).
+             03 EMAIL-USUARIO               PIC X(22).
+             03 PHONE-USUARIO               PIC X(13).
+             03 PASSWORD-USUARIO            PIC X(10).
+
+SAÍDA
+USUARIOS.DAT             19/03/2024 14:39      Arquivo DAT       16KB
+
+
+APCOB107.cbl
+     ******************************************************************
+      * Author: WALDIR NASCIMENTO COSTA
+      * Date: 17/03/2024
+      * Purpose: LISTAR USUARIOS - LISTAGEM INDEXADA
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. APCOB107.
+      *
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+           INPUT-OUTPUT SECTION.
+           FILE-CONTROL.
+               SELECT USUARIOS ASSIGN TO
+               'C:\Users\LENOVO\Desktop\COBOLPRG\USUARIOS.DAT'                 
+               ORGANISATION IS INDEXED
+               ACCESS  MODE IS SEQUENTIAL
+               RECORD KEY IS ID-USUARIO
+               FILE STATUS IS WS-FS.
+      *
+       DATA DIVISION.
+       FILE SECTION.
+       FD USUARIOS.
+           COPY FDCOBM58.                                                      
+      *
+       WORKING-STORAGE SECTION.
+       01 WS-REGISTRO                       PIC X(69) VALUE SPACES.
+       01 FILLER REDEFINES WS-REGISTRO.
+          03 WS-ID-USUARIO                  PIC 9(02).
+          03 WS-NOME-USUARIO                PIC X(22).
+          03 WS-EMAIL-USUARIO               PIC X(22).
+          03 WS-PHONE-USUARIO               PIC X(13).
+          03 WS-PASSWORD-USUARIO            PIC X(10).
+
+       77 WS-FS                             PIC 99.
+          88 FS-OK                          VALUE 0.
+       77 WS-EOF                            PIC X.
+          88 EOF-OK                         VALUE'S' FALSE 'N'.
+       77 WS-EXIT                           PIC X.
+          88 EXIT-OK                        VALUE'F' FALSE 'N'.
+       77 WS-CONT                           PIC 9(003) VALUES ZEROS.
+      *
+       PROCEDURE DIVISION.
+       MAIN-PROCEDURE.
+            SET EXIT-OK TO FALSE
+            DISPLAY '      ID      NOME                    '
+                      '    EMAIL             PHONE        SENHA'               
+            
+            PERFORM P300-LISTAR THRU P300-FIM
+            PERFORM P900-FIM  
+            .
+       P300-LISTAR.
+            SET EOF-OK              TO FALSE
+            SET FS-OK               TO TRUE
+            SET WS-CONT             TO 0.
+      *
+            OPEN INPUT USUARIOS
+      *
+            IF FS-OK THEN
+               PERFORM UNTIL EOF-OK
+                   READ USUARIOS INTO WS-REGISTRO
+                        AT END
+                           SET EOF-OK TO TRUE
+                        NOT AT END
+                        DISPLAY ' REG '
+                      
+                           ADD 1 TO WS-CONT
+      *                     DISPLAY 'REGISTRO '
+                            DISPLAY ' '
+                                WS-CONT
+                                '  '
+                                WS-ID-USUARIO
+                                '  '
+                                WS-NOME-USUARIO
+                                '  '
+                                WS-EMAIL-USUARIO
+                                ' '
+                                WS-PHONE-USUARIO
+                                ' '
+                                WS-PASSWORD-USUARIO
+                   END-READ
+               END-PERFORM
+            ELSE            
+                DISPLAY 'ERRO AO ABRIR O ARQUIVO DE USUARIOS.'
+                DISPLAY 'FILE STATUS: 'WS-FS
+            END-IF
+
+            CLOSE USUARIOS
+           .
+       P300-FIM.
+       P900-FIM.
+
+           STOP RUN.
+       END PROGRAM APCOB107.
+
+
+SAÍDA
+      ID       NOME                       EMAIL             PHONE         SENHA
+REG
+001   01   Carlos Sousa           carlos@capgemini.com    75949877474    Carlos@31
+REG
+002   02   Mateus Costa           mateus@capgemini.com    75949877474    Mateus#32    
+REG
+003   03   Andre Luis             andre@capgemini.com     75949877474    Andre$33     
+REG
+004   04   Marcos Sintra          marcos@bradesco.com     75949877474    Marcos&36       
+      
+
+
+

@@ -1,0 +1,340 @@
+
+      Desafio 
+      
+      Este programa tem como objetivo registrar um usuário. Ele deve receber e validar os dados do usuário, e registrar em 
+      arquivo indexado. Este é um programa online, que recebe as seguintes informações do usuário:
+
+      . Email            PIC X(100)
+      . Nome             PIC X(100)
+      . Password         PIC X(8)
+      . Phone            PIC 9(12)
+
+      Fluxo: 
+      O usuário acessa a interface, preenche os dados citados. O programa realiza as seguintas validações:
+        1. E-mail é válio (ter pelo menos 10 caracteres, ter pelo menos um caractere antes do @ e pertencer aos dominios "capgemini.com" ou "bradesco.com"
+        2. Nome com pelo menos 2 palavras
+        3. Senha com pelo menos oito caracteres, um numero, uma letra maiúscula, uma letra minúscula e um caractere especial.
+        4. telefone com no mínimo 11 caracteres. Ex: (999999999999).
+      Caso algum dos campos esteja inválido, o programa deve apresentar um erro e uma sugestão de correção ao usuário. Em caso de sucesso, o programa chama
+      o modo de geração de ID e registra o usuário, indexado pelo id gerado. 
+      Ex:
+
+      ID        nome           mail              phone      password
+      0001     carlos  carlos@capgemini.com  756666666666   Carlos@34
+
+      
+      APCOB106.cbl
+      ******************************************************************
+      * Author: WALDIR NASCIMENTO COSTA
+      * Date: 03/03/2024
+      * Purpose:  Desafio - Registrar um usuario - PROGRAMA COMPLETO
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. APCOB106.
+      *
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+           INPUT-OUTPUT SECTION.
+           FILE-CONTROL.
+               SELECT USUARIOS ASSIGN TO
+               'C:\Users\LENOVO\Desktop\COBOLPRG\USUARIOS.DAT'
+               ORGANISATION IS INDEXED
+               ACCESS  MODE IS RANDOM
+               RECORD  KEY  IS ID-USUARIO
+               FILE STATUS  IS WS-FS.
+      *
+       DATA DIVISION.
+       FILE SECTION.
+       FD USUARIOS.
+           COPY FDCOBM58.
+      *
+       WORKING-STORAGE SECTION.
+       01 WS-REGISTRO                      PIC X(69) VALUE SPACES.
+       01 FILLER REDEFINES WS-REGISTRO.
+          03 WS-ID-USUARIO                 PIC 9(02).
+          03 WS-NOME-USUARIO               PIC X(22).
+          03 WS-EMAIL-USUARIO              PIC X(22).
+          03 WS-PHONE-USUARIO              PIC X(13).
+          03 WS-PASSWORD-USUARIO           PIC X(10).
+       77 WS-FS                            PIC 99.
+          88 FS-OK                         VALUE 0.       
+       77 WS-EOF                           PIC X.
+          88 EOF-OK                        VALUE'S' FALSE 'N'.      
+       77 WS-EXIT                          PIC X.
+          88 EXIT-OK                       VALUE'F' FALSE 'N'.     
+      *
+       77 WS-EMAIL-COMPLETO                PIC X(22) VALUE SPACES.
+       01 WS-EMAIL.
+          03 WS-PRIM-PARTE                 PIC X(8) VALUE SPACES.
+          03 WS-SEG-PARTE                  PIC X(13) VALUE SPACES.
+          03 WS-TER-PARTE                  PIC X(1) VALUE SPACES.
+       01 WS-COUNT.
+          03 WS-PONTEIRO1                  PIC 9(02) VALUE ZEROS.
+          03 WS-TOT-CAMPOS1                PIC 9(02) VALUE ZEROS.
+          03 WS-TM-1                       PIC 9(02) VALUE ZEROS.
+          03 WS-TM-2                       PIC 9(02) VALUE ZEROS.
+          03 WS-TM-3                       PIC 9(02) VALUE ZEROS.
+      *
+       77 WS-NOME-COMPLETO                 PIC X(22) VALUE SPACES.
+       01 WS-NOME.
+          03 WS-PRIM-NOME                  PIC X(8) VALUE SPACES.
+          03 WS-NOME-MEIO                  PIC X(8) VALUE SPACES.
+          03 WS-ULTI-MOME                  PIC X(6) VALUE SPACES.
+       01 WS-COUNTN.
+          03 WS-PONTEIRO2                  PIC 9(02) VALUE ZEROS.
+          03 WS-T-CAMPOS                   PIC 9(02) VALUE ZEROS.
+          03 WS-T-1                        PIC 9(02) VALUE ZEROS.
+          03 WS-T-2                        PIC 9(02) VALUE ZEROS.
+          03 WS-T-3                        PIC 9(02) VALUE ZEROS.
+      *
+       77 WS-SENHA                         PIC X(10) VALUE SPACES.
+       77 WS-I                             PIC 9(2)  VALUE 1.
+       77 WS-TAMANHOSENHA                  PIC 9(2)  VALUE 0.
+       77 WS-FLAGNUMERO                    PIC 9     VALUE 0.
+       77 WS-FLAGMAIUSCULA                 PIC 9     VALUE 0.
+       77 WS-FLAGMINUSCULA                 PIC 9     VALUE 0.
+       77 WS-FLAGESPECIAL                  PIC 9     VALUE 0.
+       77 WS-CARACTERE                     PIC X.
+       77 WS-VALIDACAOFINAL                PIC 9     VALUE 0.
+      *
+       77 WS-TELEFONE                      PIC X(13) VALUE SPACES.
+       77 WS-TAMANHOFONE                   PIC 99    VALUE ZERO.
+       77 WS-ERRO-MENSAGEM                 PIC X(50) VALUE SPACES.
+       77 WS-ID                            PIC 99    VALUE 0.
+       77 WS-TECLA-AUX                PIC X.
+      *
+       PROCEDURE DIVISION.      
+           SET EXIT-OK TO FALSE
+           PERFORM 001-PRINCIPAL THRU 601-REGISTRAR UNTIL EXIT-OK
+           PERFORM 801-FINALIZAR
+           .
+      *
+       000-PRINCIPAL SECTION.
+       001-PRINCIPAL.
+           PERFORM 101-VALIDAR-EMAIL
+           PERFORM 201-VALIDAR-NOME
+           PERFORM 301-VALIDAR-PASSWORD
+           PERFORM 401-VALIDAR-PHONE
+           PERFORM 501-GERAR-ID
+           PERFORM 601-REGISTRAR
+           PERFORM 700-CONSULTA
+           PERFORM 801-FINALIZAR
+      *           
+           .
+       100-VALIDAR-EMAIL SECTION.
+       101-VALIDAR-EMAIL.
+           INITIALIZE WS-EMAIL-COMPLETO                                        
+           INITIALIZE WS-TOT-CAMPOS1
+           DISPLAY "DIGITE SEU EMAIL COMPLETO"
+           ACCEPT WS-EMAIL
+           DISPLAY '  '
+           DISPLAY 'VALIDAR EMAIL'
+           MOVE WS-EMAIL              TO WS-EMAIL-COMPLETO
+           MOVE 1                     TO WS-PONTEIRO1
+           UNSTRING
+               WS-EMAIL-COMPLETO
+               DELIMITED BY '@'
+               INTO WS-PRIM-PARTE COUNT IN WS-TM-1
+                    WS-SEG-PARTE  COUNT IN WS-TM-2
+                    WS-SEG-PARTE  COUNT IN WS-TM-3
+               WITH POINTER WS-PONTEIRO1
+               TALLYING IN WS-TOT-CAMPOS1
+           END-UNSTRING.
+
+           DISPLAY "WS-PRIM-PARTE: " WS-PRIM-PARTE
+           DISPLAY "WS-SEG-PARTE : " WS-SEG-PARTE
+           DISPLAY "WS-TER-PARTE : " WS-TER-PARTE
+           DISPLAY "WS-PONTEIRO  : " WS-PONTEIRO1
+           DISPLAY "WS-TOT-CAMPOS: " WS-TOT-CAMPOS1
+           DISPLAY "WS-TM-1......: " WS-TM-1
+           DISPLAY "WS-TM-2......: " WS-TM-2
+           DISPLAY "WS-TM-3......: " WS-TM-3
+           IF WS-EMAIL-COMPLETO > 10 AND WS-TM-1 > 0 AND
+               (WS-SEG-PARTE = 'capgemini.com' OR 'bradesco.com')
+               DISPLAY 'EMAIL VALIDO'
+               DISPLAY ' '
+           ELSE
+               DISPLAY 'EMAIL INVALIDO. '
+                       ' '
+                       ' E-MAIL VALIDO (TER PELO MENOS 10 CARACTERES,'
+                       ' TER PELO MENOS UM CARACTERE ANTES DO @ E '
+                       ' PERTEMCER AO DOMINIOS CAPGEMINI.COM'
+                       ' OU BRADESCO.COM'      
+           PERFORM 101-VALIDAR-EMAIL.
+      *
+       200-VALIDAR-NOME SECTION.
+       201-VALIDAR-NOME.
+           INITIALISE WS-NOME-COMPLETO                                         
+           INITIALISE WS-T-CAMPOS
+           DISPLAY "DIGITE SEU NOME COMPLETO"
+           ACCEPT WS-NOME
+           DISPLAY '  '
+           DISPLAY 'VALIDAR NOME'
+           MOVE WS-NOME                    TO WS-NOME-COMPLETO
+           MOVE 1                          TO WS-PONTEIRO2
+           UNSTRING
+               WS-NOME-COMPLETO
+               DELIMITED BY ALL SPACES
+               INTO WS-PRIM-NOME COUNT IN WS-T-1
+                    WS-NOME-MEIO COUNT IN WS-T-2
+                    WS-ULTI-MOME COUNT IN WS-T-3
+               WITH POINTER WS-PONTEIRO2
+               TALLYING IN WS-T-CAMPOS 
+           END-UNSTRING
+               DISPLAY 'WS-PRIM-NOME : ' WS-PRIM-NOME
+               DISPLAY 'WS-NOME-MEIO : ' WS-NOME-MEIO
+               DISPLAY 'WS-ULTI-NOME : ' WS-ULTI-MOME
+               DISPLAY 'WS-POINTER   : ' WS-PONTEIRO2
+               DISPLAY 'WS-T-CAMPOS  : ' WS-T-CAMPOS 
+           IF WS-T-CAMPOS  >= 2
+               DISPLAY 'NOME VALIDO'
+               DISPLAY ' '
+           ELSE
+               DISPLAY 'NOME DEVE TER PELO MENOS 2 PALAVRAS'
+           PERFORM 201-VALIDAR-NOME.
+      *
+       300-VALIDAR-PASSWORD SECTION.
+       301-VALIDAR-PASSWORD.
+           INITIALIZE WS-SENHA                         
+           INITIALIZE WS-I                             
+           INITIALIZE WS-TAMANHOSENHA                  
+           INITIALIZE WS-FLAGNUMERO                    
+           INITIALIZE WS-FLAGMAIUSCULA                
+           INITIALIZE WS-FLAGMINUSCULA                 
+           INITIALIZE WS-FLAGESPECIAL                  
+           INITIALIZE WS-CARACTERE                     
+           INITIALIZE WS-VALIDACAOFINAL                      
+             
+           DISPLAY 'DIGITE SUA SENHA'
+           ACCEPT WS-SENHA
+           DISPLAY 'VALIDAR SENHA'
+           MOVE WS-SENHA                    TO WS-TAMANHOSENHA
+           COMPUTE WS-TAMANHOSENHA = FUNCTION LENGTH(WS-SENHA).
+           PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >
+                   WS-TAMANHOSENHA
+               MOVE WS-SENHA(WS-I:1) TO WS-CARACTERE
+           EVALUATE TRUE
+               WHEN FUNCTION NUMVAL-C(WS-CARACTERE) > 0
+                   SET WS-FLAGNUMERO TO 1
+               WHEN WS-CARACTERE >= 'A' AND WS-CARACTERE <= 'Z'
+                   SET WS-FLAGMAIUSCULA TO 1
+               WHEN WS-CARACTERE >= 'a' AND WS-CARACTERE <= 'z'
+                  SET WS-FLAGMINUSCULA TO 1
+               WHEN WS-CARACTERE = '!' OR WS-CARACTERE = '@' OR
+                    WS-CARACTERE = '#' OR WS-CARACTERE = '$' OR
+                    WS-CARACTERE = '%' OR WS-CARACTERE = '¨' OR
+                    WS-CARACTERE = '&' OR WS-CARACTERE = '*'
+                    SET WS-FLAGESPECIAL TO 1
+               WHEN OTHER
+                   CONTINUE
+           END-EVALUATE
+           END-PERFORM.
+              IF WS-TAMANHOSENHA  >= 8 AND
+                 WS-FLAGNUMERO     = 1 AND
+                 WS-FLAGMAIUSCULA  = 1 AND
+                 WS-FLAGMINUSCULA  = 1 AND
+                 WS-FLAGESPECIAL   = 1
+                 THEN
+                 SET WS-VALIDACAOFINAL TO 1
+             END-IF.
+             IF WS-VALIDACAOFINAL = 1
+                THEN
+                DISPLAY 'SENHA VALIDA.'
+                DISPLAY ' '
+             ELSE
+            DISPLAY 'SENHA INVALIDA. SENHA COM PELO MENOS 8 CARACTERES,'
+                    ' UM NUMERO, UMA LETRA MAIUSCULA, UMA LETRA '
+                    ' MINUSCULA E UM CARACTERE ESPECIAL.'
+           PERFORM 301-VALIDAR-PASSWORD.
+      *
+       400-VALIDAR-PHONE SECTION.
+       401-VALIDAR-PHONE.
+           INITIALIZE WS-TELEFONE 
+           DISPLAY 'INSIRA O TELEFONE (COM 11 OU 12 CARACTERES): '
+           ACCEPT WS-TELEFONE
+           DISPLAY ' '
+           DISPLAY 'VALIDAR TELEFONE'
+           DISPLAY ' '
+           COMPUTE WS-TAMANHOFONE = FUNCTION LENGTH( FUNCTION TRIM
+                  ( WS-TELEFONE )).
+               IF WS-TAMANHOFONE < 11 OR WS-TAMANHOFONE > 12
+                  DISPLAY 'ERRO: O TELEFONE INSERIDO TEM '
+                    WS-TAMANHOFONE ' CARACTERES. '
+           DISPLAY ' '
+           DISPLAY 'TELEFONE COM NO MINIMO 11 CARACTERES E NO MAXIMO 12'
+                   'CARACTERES. EX: (999999999999).'
+           PERFORM 401-VALIDAR-PHONE
+               ELSE
+                   DISPLAY 'TELEFONE VALIDO: '
+               END-IF.
+      *
+       500-GERAR-ID SECTION.
+       501-GERAR-ID.
+           EXIT
+           .
+      *
+       600-REGISTRAR-USUARIO SECTION.
+       601-REGISTRAR.
+           SET EOF-OK        TO FALSE
+           SET FS-OK         TO TRUE
+           ADD 1                   TO WS-ID
+           MOVE WS-ID              TO WS-ID-USUARIO
+           MOVE WS-NOME            TO WS-NOME-USUARIO
+           MOVE WS-EMAIL-COMPLETO  TO WS-EMAIL-USUARIO                         
+           MOVE WS-TELEFONE        TO WS-PHONE-USUARIO
+           MOVE WS-SENHA           TO WS-PASSWORD-USUARIO
+      *
+           OPEN I-O USUARIOS
+      *
+           IF WS-FS EQUAL 35 THEN
+              OPEN OUTPUT USUARIOS
+           END-IF
+      *
+           IF FS-OK THEN
+               MOVE WS-ID-USUARIO       TO ID-USUARIO
+               MOVE WS-NOME-USUARIO     TO NOME-USUARIO
+               MOVE WS-EMAIL-USUARIO    TO EMAIL-USUARIO
+               MOVE WS-PHONE-USUARIO    TO PHONE-USUARIO
+               MOVE WS-PASSWORD-USUARIO TO PASSWORD-USUARIO
+
+               WRITE REG-USUARIOS
+      *
+                    INVALID KEY
+                        DISPLAY 'USUARIO JA CADASTRADO!'
+                    NOT INVALID KEY
+                        DISPLAY 'Usuario gravado com sucesso!'
+               END-WRITE
+           ELSE
+                  DISPLAY 'ERRO AO ABRIR O ARQUIVO DE USUARIOS.'
+                  DISPLAY 'FILE STATUS: 'WS-FS
+           END-IF
+           CLOSE USUARIOS      
+           .
+       700-CONSULTA.
+               DISPLAY 'TECLE <C> PARA CONTINUAR OU <F> PARA FINALIZAR'
+               ACCEPT WS-TECLA-AUX.
+           EVALUATE WS-TECLA-AUX
+              WHEN 'C'
+                 DISPLAY '-------------------------------------------'
+                 PERFORM 001-PRINCIPAL THRU 601-REGISTRAR UNTIL EXIT-OK
+              WHEN 'c'
+                 DISPLAY '-------------------------------------------'
+                 PERFORM 001-PRINCIPAL THRU 601-REGISTRAR UNTIL EXIT-OK      
+              WHEN 'f'
+                 DISPLAY 'OBRIGADO'
+                 PERFORM 801-FINALIZAR
+              WHEN 'F'
+                 DISPLAY 'OBRIGADO'
+                 PERFORM 801-FINALIZAR
+              WHEN OTHER
+                 DISPLAY 'DADO INVALIDO, DIGITE A LETRA CORRETA'                   
+                 PERFORM 700-CONSULTA
+           END-EVALUATE
+           .
+      *
+       800-FINALIZAR SECTION.
+       801-FINALIZAR.
+           STOP RUN.
+       END PROGRAM APCOB106.
